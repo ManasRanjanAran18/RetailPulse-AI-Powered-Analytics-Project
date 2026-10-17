@@ -1,0 +1,56 @@
+# RetailPulse dashboard. Replace the image with the one pushed by the
+# "Publish image" GitHub Action (ghcr.io/<your-user>/<repo>:latest).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: retailpulse-dashboard
+  namespace: retailpulse
+  labels:
+    app: retailpulse-dashboard
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: retailpulse-dashboard
+  template:
+    metadata:
+      labels:
+        app: retailpulse-dashboard
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: dashboard
+          image: ghcr.io/YOUR_GITHUB_USERNAME/retailpulse-analytics:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+              name: http
+          env:
+            - name: PORT
+              value: "8501"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20

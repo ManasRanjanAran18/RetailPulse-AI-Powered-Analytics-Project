@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+.ruff_cache/
+
+# MLflow local state (tracking DB + artifacts) - regenerate by running the pipeline
+mlruns/
+notebooks/mlruns/
+mlflow/*.db
+mlflow/artifacts/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.pem
+
+# NOTE: data/processed/ and models/ ARE committed on purpose so the dashboard
+# starts instantly on Render without having to train anything.

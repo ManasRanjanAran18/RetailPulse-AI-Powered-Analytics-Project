@@ -1,0 +1,84 @@
+{
+  "etl": {
+    "rows_raw": 54720,
+    "rows_dropped_missing_keys": 0,
+    "duplicates_removed": 163,
+    "missing_prices_imputed": 109,
+    "returns_or_invalid_removed": 218,
+    "rows_clean": 54339,
+    "date_min": "2024-01-01",
+    "date_max": "2025-12-31",
+    "customers": 1455,
+    "products": 40
+  },
+  "segmentation": {
+    "k": 4,
+    "silhouette": 0.3834
+  },
+  "churn": {
+    "roc_auc": 0.8986169015948646,
+    "avg_precision": 0.818657507108946,
+    "precision": 0.8103448275862069,
+    "recall": 0.6438356164383562,
+    "f1": 0.7175572519083969,
+    "base_rate": 0.26071428571428573,
+    "n_test": 280,
+    "cutoff": "2025-10-03"
+  },
+  "forecast": {
+    "models": [
+      "gbm",
+      "prophet",
+      "lstm"
+    ],
+    "weights": {
+      "gbm": 0.333,
+      "prophet": 0.3714,
+      "lstm": 0.2957
+    },
+    "metrics": {
+      "gbm": {
+        "mae": 15.6492,
+        "rmse": 19.8478,
+        "wape": 0.1224,
+        "bias": 4.2126
+      },
+      "prophet": {
+        "mae": 14.0303,
+        "rmse": 18.1082,
+        "wape": 0.1097,
+        "bias": 3.0798
+      },
+      "lstm": {
+        "mae": 17.6233,
+        "rmse": 23.8729,
+        "wape": 0.1378,
+        "bias": -12.8554
+      },
+      "ensemble (hybrid)": {
+        "mae": 13.099,
+        "rmse": 17.1397,
+        "wape": 0.1024,
+        "bias": -1.2546
+      }
+    },
+    "timings_sec": {
+      "gbm": 0.7,
+      "prophet": 0.2,
+      "lstm": 8.8
+    }
+  },
+  "inventory": {
+    "Healthy": 29,
+    "Overstock": 7,
+    "Reorder": 3,
+    "Critical": 1
+  },
+  "drift": {
+    "transactions_alerts": 0,
+    "feature_alerts": 0,
+    "forecast_error_breaches": 0
+  },
+  "generated_at": "2026-10-17T12:31:05+00:00",
+  "runtime_sec": 31.0
+}

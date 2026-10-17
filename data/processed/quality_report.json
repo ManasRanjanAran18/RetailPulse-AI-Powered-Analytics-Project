@@ -1,0 +1,12 @@
+{
+  "rows_raw": 54720,
+  "rows_dropped_missing_keys": 0,
+  "duplicates_removed": 163,
+  "missing_prices_imputed": 109,
+  "returns_or_invalid_removed": 218,
+  "rows_clean": 54339,
+  "date_min": "2024-01-01",
+  "date_max": "2025-12-31",
+  "customers": 1455,
+  "products": 40
+}

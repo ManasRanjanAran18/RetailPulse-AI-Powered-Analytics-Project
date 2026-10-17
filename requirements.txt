@@ -1,0 +1,12 @@
+# ---------------------------------------------------------------------------
+# RetailPulse - RUNTIME dependencies (dashboard + core ML)
+# Deliberately lean so the Docker image builds fast and fits Render's free tier.
+# Heavy training / notebook extras live in requirements-full.txt
+# ---------------------------------------------------------------------------
+streamlit==1.66.0
+pandas==3.0.2
+numpy==2.4.4
+scikit-learn==1.8.0
+scipy==1.17.1
+joblib==1.5.3
+plotly==7.1.0

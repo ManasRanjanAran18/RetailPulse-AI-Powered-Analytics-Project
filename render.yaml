@@ -1,0 +1,15 @@
+# Render Blueprint - deploys the RetailPulse dashboard as a Docker web service.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: retailpulse-dashboard
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free                      # change to starter/standard for always-on + more RAM
+    region: singapore               # closest to India; or oregon / frankfurt / ohio
+    healthCheckPath: /_stcore/health
+    autoDeploy: true                # redeploy on every push to the connected branch
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

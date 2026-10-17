@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# RetailPulse - FULL dependencies for training, notebooks and experiments
+#   pip install -r requirements-full.txt
+# ---------------------------------------------------------------------------
+-r requirements.txt
+
+# Forecasting models
+prophet==1.5.0
+tensorflow-cpu==2.21.0
+
+# MLOps / tuning
+mlflow==3.17.1
+optuna==5.0.0
+cloudpickle==3.1.2
+
+# Notebooks & plotting
+matplotlib==3.10.8
+ipykernel==7.4.0
+nbconvert==7.17.2
+nbformat==5.11.1
+
+# Testing
+pytest==9.1.1

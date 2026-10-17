@@ -1,0 +1,4 @@
+feature,psi,ks_stat,ks_pvalue,status
+unit_price,0.0128,0.0476,1.1912631310469518e-10,OK
+revenue,0.0066,0.0385,4.0273134399706165e-07,OK
+quantity,0.0014,0.018,0.06903882098479752,OK

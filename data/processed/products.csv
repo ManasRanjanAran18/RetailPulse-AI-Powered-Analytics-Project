@@ -1,0 +1,41 @@
+product_id,product_name,category,unit_price,unit_cost
+P001,Grocery Item 1,Grocery,12.06,7.35
+P002,Electronics Item 2,Electronics,198.0,140.22
+P003,Apparel Item 3,Apparel,78.69,53.12
+P004,Home & Kitchen Item 4,Home & Kitchen,86.11,49.78
+P005,Beauty Item 5,Beauty,10.18,7.21
+P006,Grocery Item 6,Grocery,14.68,10.29
+P007,Electronics Item 7,Electronics,314.01,187.42
+P008,Apparel Item 8,Apparel,72.89,41.7
+P009,Home & Kitchen Item 9,Home & Kitchen,22.35,14.99
+P010,Beauty Item 10,Beauty,29.77,15.93
+P011,Grocery Item 11,Grocery,6.82,3.75
+P012,Electronics Item 12,Electronics,373.64,187.51
+P013,Apparel Item 13,Apparel,61.51,42.86
+P014,Home & Kitchen Item 14,Home & Kitchen,100.15,66.72
+P015,Beauty Item 15,Beauty,29.39,19.88
+P016,Grocery Item 16,Grocery,4.95,3.44
+P017,Electronics Item 17,Electronics,239.65,147.32
+P018,Apparel Item 18,Apparel,15.11,9.7
+P019,Home & Kitchen Item 19,Home & Kitchen,100.69,53.86
+P020,Beauty Item 20,Beauty,39.74,21.01
+P021,Grocery Item 21,Grocery,11.86,7.91
+P022,Electronics Item 22,Electronics,167.63,103.56
+P023,Apparel Item 23,Apparel,87.66,56.22
+P024,Home & Kitchen Item 24,Home & Kitchen,108.03,74.68
+P025,Beauty Item 25,Beauty,47.81,31.49
+P026,Grocery Item 26,Grocery,4.53,2.89
+P027,Electronics Item 27,Electronics,208.02,133.09
+P028,Apparel Item 28,Apparel,13.5,7.78
+P029,Home & Kitchen Item 29,Home & Kitchen,25.28,12.83
+P030,Beauty Item 30,Beauty,42.57,25.93
+P031,Grocery Item 31,Grocery,11.68,6.47
+P032,Electronics Item 32,Electronics,388.3,233.81
+P033,Apparel Item 33,Apparel,36.07,25.73
+P034,Home & Kitchen Item 34,Home & Kitchen,49.49,27.64
+P035,Beauty Item 35,Beauty,30.83,15.86
+P036,Grocery Item 36,Grocery,4.46,2.54
+P037,Electronics Item 37,Electronics,86.77,49.75
+P038,Apparel Item 38,Apparel,48.06,31.98
+P039,Home & Kitchen Item 39,Home & Kitchen,33.41,21.36
+P040,Beauty Item 40,Beauty,41.84,29.12

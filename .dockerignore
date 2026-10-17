@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+notebooks
+tests
+k8s
+docker
+mlruns
+mlflow
+*.md
+!README.md
+Makefile
+rerun_all.sh
