@@ -27,6 +27,106 @@ from src.inventory.optimizer import optimize_inventory  # noqa: E402
 st.set_page_config(page_title="RetailPulse", page_icon="📈", layout="wide",
                    initial_sidebar_state="expanded")
 
+
+# ---------- HORIZONTAL THEME SELECTOR ----------
+import streamlit as st
+
+if "selected_theme" not in st.session_state:
+    st.session_state.selected_theme = "Light"
+
+st.markdown(
+    """
+    <style>
+    div[data-testid="stHorizontalBlock"]:has(
+        div[data-testid="stRadio"]
+    ) {
+        justify-content: flex-end;
+    }
+
+    div[data-testid="stRadio"] > div {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+_, theme_col = st.columns([5, 2])
+
+with theme_col:
+    theme = st.radio(
+        "🎨 Theme",
+        ["☀️ Light", "🌙 Dark", "🔵 Blue"],
+        horizontal=True,
+        key="theme_selector",
+        label_visibility="collapsed",
+        index=["Light", "Dark", "Blue"].index(
+            st.session_state.selected_theme
+        )
+    )
+
+st.session_state.selected_theme = {
+    "☀️ Light": "Light",
+    "🌙 Dark": "Dark",
+    "🔵 Blue": "Blue"
+}[theme]
+
+# ---------- THEME COLORS ----------
+themes = {
+    "Light": {
+        "bg": "#FFFFFF",
+        "sidebar": "#F1F5F9",
+        "text": "#1F2937",
+        "card": "#F8FAFC"
+    },
+    "Dark": {
+        "bg": "#0E1117",
+        "sidebar": "#161B22",
+        "text": "#F1F5F9",
+        "card": "#1E293B"
+    },
+    "Blue": {
+        "bg": "#EAF3FF",
+        "sidebar": "#D6E8FF",
+        "text": "#12345A",
+        "card": "#FFFFFF"
+    }
+}
+
+colors = themes[st.session_state.selected_theme]
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-color: {colors["bg"]};
+        color: {colors["text"]};
+    }}
+
+    [data-testid="stSidebar"] {{
+        background-color: {colors["sidebar"]};
+    }}
+
+    [data-testid="stMetric"] {{
+        background-color: {colors["card"]};
+        border-radius: 12px;
+        padding: 12px;
+    }}
+
+    .stApp h1, .stApp h2, .stApp h3,
+    .stApp p, .stApp label,
+    [data-testid="stMetricLabel"],
+    [data-testid="stMetricValue"] {{
+        color: {colors["text"]};
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 PALETTE = px.colors.qualitative.Set2
 STATUS_COLORS = {"Critical": "#d62728", "Reorder": "#ff7f0e",
                  "Healthy": "#2ca02c", "Overstock": "#1f77b4"}
