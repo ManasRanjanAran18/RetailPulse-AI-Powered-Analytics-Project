@@ -109,8 +109,30 @@ st.markdown(
         color: {colors["text"]};
     }}
 
+    [data-testid="stHeader"] {{
+        background-color: {colors["bg"]};
+        color: {colors["text"]};
+    }}
+
+    [data-testid="stHeader"] button,
+    [data-testid="stHeader"] svg {{
+        color: {colors["text"]};
+        fill: {colors["text"]};
+    }}
+
     [data-testid="stSidebar"] {{
         background-color: {colors["sidebar"]};
+    }}
+
+    [data-testid="stMetricValue"] > div {{
+        font-size: 1.7rem;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }}
+
+    [data-testid="stMetricLabel"] p {{
+        white-space: normal;
     }}
 
     [data-testid="stMetric"] {{
@@ -172,11 +194,16 @@ def style(fig: go.Figure, height: int = 340) -> go.Figure:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=colors["text"]),
-        title_font=dict(size=16),
+        title_font=dict(size=16, color=colors["text"]),
+        legend=dict(font=dict(color=colors["text"])),
         legend_title_text="",
     )
-    fig.update_xaxes(gridcolor=colors["grid"], zeroline=False)
-    fig.update_yaxes(gridcolor=colors["grid"], zeroline=False)
+    fig.update_xaxes(gridcolor=colors["grid"], zeroline=False,
+                     tickfont=dict(color=colors["text"]),
+                     title_font=dict(color=colors["text"]))
+    fig.update_yaxes(gridcolor=colors["grid"], zeroline=False,
+                     tickfont=dict(color=colors["text"]),
+                     title_font=dict(color=colors["text"]))
     return fig
 
 
