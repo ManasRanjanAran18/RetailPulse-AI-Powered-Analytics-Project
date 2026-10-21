@@ -29,8 +29,6 @@ st.set_page_config(page_title="RetailPulse", page_icon="📈", layout="wide",
 
 
 # ---------- HORIZONTAL THEME SELECTOR ----------
-import streamlit as st
-
 if "selected_theme" not in st.session_state:
     st.session_state.selected_theme = "Light"
 
@@ -79,19 +77,25 @@ themes = {
         "bg": "#FFFFFF",
         "sidebar": "#F1F5F9",
         "text": "#1F2937",
-        "card": "#F8FAFC"
+        "card": "#F8FAFC",
+        "border": "#E2E8F0",
+        "grid": "rgba(100,116,139,0.18)",
     },
     "Dark": {
         "bg": "#0E1117",
         "sidebar": "#161B22",
         "text": "#F1F5F9",
-        "card": "#1E293B"
+        "card": "#1E293B",
+        "border": "#334155",
+        "grid": "rgba(148,163,184,0.18)",
     },
     "Blue": {
         "bg": "#EAF3FF",
         "sidebar": "#D6E8FF",
         "text": "#12345A",
-        "card": "#FFFFFF"
+        "card": "#FFFFFF",
+        "border": "#BBD6F5",
+        "grid": "rgba(18,52,90,0.15)",
     }
 }
 
@@ -111,8 +115,11 @@ st.markdown(
 
     [data-testid="stMetric"] {{
         background-color: {colors["card"]};
+        border: 1px solid {colors["border"]};
+        border-left: 4px solid #4F46E5;
         border-radius: 12px;
-        padding: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }}
 
     .stApp h1, .stApp h2, .stApp h3,
@@ -121,22 +128,56 @@ st.markdown(
     [data-testid="stMetricValue"] {{
         color: {colors["text"]};
     }}
+
+    .stApp h1 {{
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }}
     </style>
     """,
     unsafe_allow_html=True
 )
 
 
-PALETTE = px.colors.qualitative.Set2
-STATUS_COLORS = {"Critical": "#d62728", "Reorder": "#ff7f0e",
-                 "Healthy": "#2ca02c", "Overstock": "#1f77b4"}
-RISK_COLORS = {"High": "#d62728", "Medium": "#ff7f0e", "Low": "#2ca02c"}
+# ---------- CHART PALETTE (consistent across all sections) ----------
+PALETTE = ["#4F46E5", "#06B6D4", "#10B981", "#F59E0B", "#EC4899",
+           "#8B5CF6", "#14B8A6", "#F97316"]
+PRIMARY, SECONDARY, ACCENT = PALETTE[0], PALETTE[1], PALETTE[3]
+NEUTRAL = "#64748B"
+SEQ_SCALE = ["#E0E7FF", "#A5B4FC", "#6366F1", "#4338CA", "#312E81"]
+
+STATUS_COLORS = {"Critical": "#EF4444", "Reorder": "#F59E0B",
+                 "Healthy": "#10B981", "Overstock": "#3B82F6"}
+RISK_COLORS = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#10B981"}
+DRIFT_COLORS = {"OK": "#10B981", "WARN": "#F59E0B", "ALERT": "#EF4444", "n/a": "#94A3B8"}
 SEGMENT_ACTIONS = {
     "Champions": "Reward & retain: early access, loyalty perks, referral programmes.",
     "Loyal Customers": "Grow basket size: cross-sell, bundles, tier upgrades.",
     "At Risk": "Win back now: personalised offers, reminders, feedback outreach.",
     "Hibernating": "Low-cost reactivation: seasonal campaigns; stop heavy spend if no response.",
 }
+
+
+def hex_to_rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def style(fig: go.Figure, height: int = 340) -> go.Figure:
+    """Apply the shared, theme-aware look to every chart."""
+    fig.update_layout(
+        height=height,
+        margin=dict(l=10, r=10, t=50, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=colors["text"]),
+        title_font=dict(size=16),
+        legend_title_text="",
+    )
+    fig.update_xaxes(gridcolor=colors["grid"], zeroline=False)
+    fig.update_yaxes(gridcolor=colors["grid"], zeroline=False)
+    return fig
 
 
 # ------------------------------------------------------------------ data layer
@@ -196,26 +237,52 @@ def page_overview(tx: pd.DataFrame) -> None:
     k4.metric("Avg order value", money(df["revenue"].mean()))
     k5.metric("Active customers (90d)", f"{recent_cust:,}")
 
-    monthly = (df.assign(month=df["order_date"].dt.to_period("M").dt.to_timestamp())
-                 .groupby("month", as_index=False).agg(revenue=("revenue", "sum"),
-                                                       units=("quantity", "sum")))
+    df = df.assign(month=df["order_date"].dt.to_period("M").dt.to_timestamp())
+    monthly = (df.groupby("month", as_index=False)
+                 .agg(revenue=("revenue", "sum"), units=("quantity", "sum")))
     fig = px.area(monthly, x="month", y="revenue", title="Monthly revenue",
-                  color_discrete_sequence=[PALETTE[0]])
-    fig.update_layout(height=340, margin=dict(l=10, r=10, t=50, b=10), yaxis_title="Revenue ($)",
-                      xaxis_title=None)
+                  color_discrete_sequence=[PRIMARY])
+    fig.update_traces(line=dict(width=2.5), fillcolor=hex_to_rgba(PRIMARY, 0.25))
+    style(fig, 340)
+    fig.update_layout(yaxis_title="Revenue ($)", xaxis_title=None)
     st.plotly_chart(fig, width="stretch")
 
     a, b = st.columns(2)
     by_cat = df.groupby("category", as_index=False)["revenue"].sum().sort_values("revenue")
     fig = px.bar(by_cat, x="revenue", y="category", orientation="h", title="Revenue by category",
-                 color_discrete_sequence=[PALETTE[1]])
-    fig.update_layout(height=320, margin=dict(l=10, r=10, t=50, b=10), yaxis_title=None)
+                 color="revenue", color_continuous_scale=SEQ_SCALE)
+    style(fig, 320)
+    fig.update_layout(yaxis_title=None, coloraxis_showscale=False)
     a.plotly_chart(fig, width="stretch")
     by_store = df.groupby("store", as_index=False)["revenue"].sum()
-    fig = px.pie(by_store, names="store", values="revenue", hole=0.45, title="Revenue by channel",
+    fig = px.pie(by_store, names="store", values="revenue", hole=0.5, title="Revenue by channel",
                  color_discrete_sequence=PALETTE)
-    fig.update_layout(height=320, margin=dict(l=10, r=10, t=50, b=10))
+    fig.update_traces(textposition="inside", textinfo="percent+label",
+                      marker=dict(line=dict(color=colors["bg"], width=2)))
+    style(fig, 320)
     b.plotly_chart(fig, width="stretch")
+
+    # ---- NEW: category trend + weekday pattern
+    c, d = st.columns([3, 2])
+    cat_month = df.groupby(["month", "category"], as_index=False)["revenue"].sum()
+    fig = px.area(cat_month, x="month", y="revenue", color="category",
+                  title="Monthly revenue by category (stacked)",
+                  color_discrete_sequence=PALETTE)
+    style(fig, 340)
+    fig.update_layout(yaxis_title="Revenue ($)", xaxis_title=None,
+                      legend=dict(orientation="h", y=-0.2))
+    c.plotly_chart(fig, width="stretch")
+
+    order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    wk = (df.assign(weekday=df["order_date"].dt.day_name())
+            .groupby("weekday", as_index=False)["revenue"].sum())
+    wk["weekday"] = pd.Categorical(wk["weekday"], categories=order, ordered=True)
+    wk = wk.sort_values("weekday")
+    fig = px.bar(wk, x="weekday", y="revenue", title="Revenue by day of week",
+                 color="revenue", color_continuous_scale=SEQ_SCALE)
+    style(fig, 340)
+    fig.update_layout(xaxis_title=None, yaxis_title="Revenue ($)", coloraxis_showscale=False)
+    d.plotly_chart(fig, width="stretch")
 
     top = (df.groupby("product_id", as_index=False)
              .agg(revenue=("revenue", "sum"), units=("quantity", "sum"))
@@ -248,17 +315,51 @@ def page_forecast() -> None:
     if horizon_view.startswith("Forecast"):
         hist = daily.tail(120)
         fig = go.Figure()
-        fig.add_scatter(x=hist["date"], y=hist["units"], name="Actual", line=dict(color="#444"))
+        fig.add_scatter(x=hist["date"], y=hist["units"], name="Actual",
+                        line=dict(color=NEUTRAL, width=2))
         fig.add_scatter(x=fut["date"], y=fut["ensemble_upper"], line=dict(width=0),
                         showlegend=False, hoverinfo="skip")
         fig.add_scatter(x=fut["date"], y=fut["ensemble_lower"], fill="tonexty",
-                        fillcolor="rgba(31,119,180,0.18)", line=dict(width=0),
+                        fillcolor=hex_to_rgba(PRIMARY, 0.18), line=dict(width=0),
                         name="90% interval", hoverinfo="skip")
         fig.add_scatter(x=fut["date"], y=fut["ensemble"], name="Ensemble forecast",
-                        line=dict(color="#1f77b4", width=3))
-        fig.update_layout(height=420, margin=dict(l=10, r=10, t=30, b=10),
+                        line=dict(color=PRIMARY, width=3))
+        style(fig, 420)
+        fig.update_layout(margin=dict(l=10, r=10, t=30, b=10),
                           yaxis_title="Units / day", legend=dict(orientation="h", y=1.08))
         st.plotly_chart(fig, width="stretch")
+
+        # ---- NEW: cumulative forecast demand
+        a, b = st.columns(2)
+        cum = fut[["date", "ensemble", "ensemble_lower", "ensemble_upper"]].copy()
+        for c in ("ensemble", "ensemble_lower", "ensemble_upper"):
+            cum[c] = cum[c].cumsum()
+        fig = go.Figure()
+        fig.add_scatter(x=cum["date"], y=cum["ensemble_upper"], line=dict(width=0),
+                        showlegend=False, hoverinfo="skip")
+        fig.add_scatter(x=cum["date"], y=cum["ensemble_lower"], fill="tonexty",
+                        fillcolor=hex_to_rgba(SECONDARY, 0.2), line=dict(width=0),
+                        name="90% interval", hoverinfo="skip")
+        fig.add_scatter(x=cum["date"], y=cum["ensemble"], name="Cumulative demand",
+                        line=dict(color=SECONDARY, width=3))
+        style(fig, 330)
+        fig.update_layout(title="Cumulative expected demand (next 30 days)",
+                          yaxis_title="Units", legend=dict(orientation="h", y=-0.2))
+        a.plotly_chart(fig, width="stretch")
+
+        # ---- NEW: weekday demand pattern from history
+        order = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        pat = (daily.assign(day=daily["date"].dt.day_name().str[:3])
+                    .groupby("day", as_index=False)["units"].mean())
+        pat["day"] = pd.Categorical(pat["day"], categories=order, ordered=True)
+        pat = pat.sort_values("day")
+        fig = px.bar(pat, x="day", y="units", title="Average daily units by weekday (history)",
+                     color="units", color_continuous_scale=SEQ_SCALE)
+        style(fig, 330)
+        fig.update_layout(xaxis_title=None, yaxis_title="Avg units / day",
+                          coloraxis_showscale=False)
+        b.plotly_chart(fig, width="stretch")
+
         num_cols = ["ensemble", "ensemble_lower", "ensemble_upper"] + model_cols
         show = fut[["date"] + num_cols].copy()
         show[num_cols] = show[num_cols].round(1)
@@ -270,14 +371,17 @@ def page_forecast() -> None:
         picks = st.multiselect("Models to display", model_cols, default=model_cols)
         pre = daily[daily["date"] < back["date"].min()].tail(60)
         fig = go.Figure()
-        fig.add_scatter(x=pre["date"], y=pre["units"], name="History", line=dict(color="#aaa"))
-        fig.add_scatter(x=back["date"], y=back["actual"], name="Actual", line=dict(color="#222", width=3))
+        fig.add_scatter(x=pre["date"], y=pre["units"], name="History",
+                        line=dict(color="#94A3B8"))
+        fig.add_scatter(x=back["date"], y=back["actual"], name="Actual",
+                        line=dict(color=colors["text"], width=3))
         for i, m in enumerate(picks):
             fig.add_scatter(x=back["date"], y=back[m], name=m.upper(),
-                            line=dict(color=PALETTE[i + 1], dash="dot"))
+                            line=dict(color=PALETTE[(i + 1) % len(PALETTE)], dash="dot"))
         fig.add_scatter(x=back["date"], y=back["ensemble"], name="Ensemble",
-                        line=dict(color="#1f77b4", width=3))
-        fig.update_layout(height=420, margin=dict(l=10, r=10, t=30, b=10),
+                        line=dict(color=PRIMARY, width=3))
+        style(fig, 420)
+        fig.update_layout(margin=dict(l=10, r=10, t=30, b=10),
                           yaxis_title="Units / day", legend=dict(orientation="h", y=1.08))
         st.plotly_chart(fig, width="stretch")
 
@@ -287,6 +391,28 @@ def page_forecast() -> None:
         m[c] = m[c].round(2)
     m["wape"] = (m["wape"] * 100).round(1).astype(str) + "%"
     st.dataframe(m, width="stretch", hide_index=True)
+
+    # ---- NEW: model comparison + residual distribution
+    a, b = st.columns(2)
+    cmp_df = metrics.copy()
+    cmp_df["type"] = np.where(cmp_df["model"].str.contains("ensemble"), "Ensemble", "Single model")
+    fig = px.bar(cmp_df.sort_values("mae"), x="model", y="mae", color="type", text="mae",
+                 title="Model comparison - MAE (lower is better)",
+                 color_discrete_map={"Ensemble": PRIMARY, "Single model": "#94A3B8"})
+    fig.update_traces(texttemplate="%{text:.1f}", textposition="outside")
+    style(fig, 340)
+    fig.update_layout(xaxis_title=None, yaxis_title="MAE (units/day)",
+                      legend=dict(orientation="h", y=-0.2))
+    a.plotly_chart(fig, width="stretch")
+
+    resid = back.assign(residual=back["actual"] - back["ensemble"])
+    fig = px.histogram(resid, x="residual", nbins=20, title="Ensemble error distribution (actual - forecast)",
+                       color_discrete_sequence=[SECONDARY])
+    fig.add_vline(x=0, line_dash="dash", line_color=colors["text"])
+    style(fig, 340)
+    fig.update_layout(xaxis_title="Residual (units/day)", yaxis_title="Days", bargap=0.08)
+    b.plotly_chart(fig, width="stretch")
+
     summ = read_json(str(REPORTS_DIR / "pipeline_summary.json")).get("forecast", {})
     if summ.get("weights"):
         w = ", ".join(f"{k.upper()} {v * 100:.0f}%" for k, v in summ["weights"].items())
@@ -298,6 +424,7 @@ def page_segments() -> None:
     seg = read_csv("customer_segments.csv")
     summ = read_csv("segment_summary.csv")
     ksearch = read_csv("segmentation_k_search.csv")
+    seg_colors = {s: PALETTE[i % len(PALETTE)] for i, s in enumerate(sorted(seg["segment"].unique()))}
 
     k1, k2, k3 = st.columns(3)
     k1.metric("Customers segmented", f"{len(seg):,}")
@@ -308,15 +435,43 @@ def page_segments() -> None:
     sample = seg.sample(min(len(seg), 1500), random_state=1)
     fig = px.scatter(sample, x="frequency", y="monetary", color="segment", log_x=True, log_y=True,
                      hover_data=["customer_id", "recency"], opacity=0.7,
-                     color_discrete_sequence=PALETTE, title="Customers by frequency vs. spend")
-    fig.update_layout(height=400, margin=dict(l=10, r=10, t=50, b=10),
-                      legend=dict(orientation="h", y=-0.2))
+                     color_discrete_map=seg_colors, title="Customers by frequency vs. spend")
+    style(fig, 400)
+    fig.update_layout(legend=dict(orientation="h", y=-0.2))
     a.plotly_chart(fig, width="stretch")
     fig = px.bar(summ, x="segment", y="customers", color="segment", text="customers",
-                 color_discrete_sequence=PALETTE, title="Customers per segment")
-    fig.update_layout(height=400, margin=dict(l=10, r=10, t=50, b=10), showlegend=False,
-                      xaxis_title=None)
+                 color_discrete_map=seg_colors, title="Customers per segment")
+    style(fig, 400)
+    fig.update_layout(showlegend=False, xaxis_title=None)
     b.plotly_chart(fig, width="stretch")
+
+    # ---- NEW: revenue share donut + RFM radar
+    c, d = st.columns(2)
+    fig = px.pie(summ, names="segment", values="revenue_share_pct", hole=0.5,
+                 color="segment", color_discrete_map=seg_colors, title="Revenue share by segment")
+    fig.update_traces(textposition="inside", textinfo="percent+label",
+                      marker=dict(line=dict(color=colors["bg"], width=2)))
+    style(fig, 380)
+    fig.update_layout(showlegend=False)
+    c.plotly_chart(fig, width="stretch")
+
+    prof = seg.groupby("segment")[["recency", "frequency", "monetary"]].mean()
+    prof_n = prof / prof.max()
+    axes = ["Recency (days)", "Frequency", "Monetary"]
+    fig = go.Figure()
+    for s in prof_n.index:
+        vals = prof_n.loc[s].tolist()
+        fig.add_trace(go.Scatterpolar(r=vals + vals[:1], theta=axes + axes[:1], name=s,
+                                      fill="toself", line=dict(color=seg_colors[s], width=2),
+                                      fillcolor=hex_to_rgba(seg_colors[s], 0.18)))
+    style(fig, 380)
+    fig.update_layout(title="RFM profile by segment (normalised)",
+                      polar=dict(bgcolor="rgba(0,0,0,0)",
+                                 radialaxis=dict(visible=True, range=[0, 1],
+                                                 gridcolor=colors["grid"]),
+                                 angularaxis=dict(gridcolor=colors["grid"])),
+                      legend=dict(orientation="h", y=-0.1))
+    d.plotly_chart(fig, width="stretch")
 
     st.markdown("**Segment profile**")
     st.dataframe(summ, width="stretch", hide_index=True)
@@ -326,10 +481,14 @@ def page_segments() -> None:
 
     with st.expander("How was k=4 chosen? (silhouette / elbow)"):
         fig = go.Figure()
-        fig.add_scatter(x=ksearch["k"], y=ksearch["inertia"], name="Inertia", yaxis="y")
-        fig.add_scatter(x=ksearch["k"], y=ksearch["silhouette"], name="Silhouette", yaxis="y2")
-        fig.update_layout(height=320, xaxis_title="k", yaxis=dict(title="Inertia"),
-                          yaxis2=dict(title="Silhouette", overlaying="y", side="right"),
+        fig.add_scatter(x=ksearch["k"], y=ksearch["inertia"], name="Inertia", yaxis="y",
+                        mode="lines+markers", line=dict(color=PRIMARY, width=3))
+        fig.add_scatter(x=ksearch["k"], y=ksearch["silhouette"], name="Silhouette", yaxis="y2",
+                        mode="lines+markers", line=dict(color=ACCENT, width=3))
+        style(fig, 320)
+        fig.update_layout(xaxis_title="k", yaxis=dict(title="Inertia"),
+                          yaxis2=dict(title="Silhouette", overlaying="y", side="right",
+                                      showgrid=False),
                           margin=dict(l=10, r=10, t=20, b=10))
         st.plotly_chart(fig, width="stretch")
         st.caption("k=4 balances statistical fit with four actionable business personas.")
@@ -343,6 +502,7 @@ def page_churn() -> None:
     seg = read_csv("customer_segments.csv")[["customer_id", "segment"]]
     summary = read_json(str(REPORTS_DIR / "pipeline_summary.json")).get("churn", {})
     scores = scores.merge(seg, on="customer_id", how="left")
+    scores["segment"] = scores["segment"].fillna("Unknown")
     active = scores[scores["active"]]
 
     st.caption(f"Definition: an active customer (bought in the last {ACTIVE_WINDOW_DAYS} days) is "
@@ -365,14 +525,36 @@ def page_churn() -> None:
     counts.columns = ["risk_band", "customers"]
     fig = px.bar(counts, x="risk_band", y="customers", color="risk_band", text="customers",
                  color_discrete_map=RISK_COLORS, title="Active customers by risk band")
-    fig.update_layout(height=340, margin=dict(l=10, r=10, t=50, b=10), showlegend=False,
-                      xaxis_title=None)
+    style(fig, 340)
+    fig.update_layout(showlegend=False, xaxis_title=None)
     a.plotly_chart(fig, width="stretch")
     top_imp = imp.head(10).iloc[::-1]
     fig = px.bar(top_imp, x="importance", y="feature", orientation="h",
-                 title="What drives churn (top features)", color_discrete_sequence=[PALETTE[2]])
-    fig.update_layout(height=340, margin=dict(l=10, r=10, t=50, b=10), yaxis_title=None)
+                 title="What drives churn (top features)",
+                 color="importance", color_continuous_scale=SEQ_SCALE)
+    style(fig, 340)
+    fig.update_layout(yaxis_title=None, coloraxis_showscale=False)
     b.plotly_chart(fig, width="stretch")
+
+    # ---- NEW: probability distribution + revenue at risk by segment
+    c, d = st.columns(2)
+    fig = px.histogram(active, x="churn_probability", color="risk_band", nbins=30,
+                       color_discrete_map=RISK_COLORS, barmode="overlay", opacity=0.8,
+                       category_orders={"risk_band": ["Low", "Medium", "High"]},
+                       title="Churn probability distribution")
+    style(fig, 340)
+    fig.update_layout(xaxis_title="Predicted churn probability", yaxis_title="Customers",
+                      legend=dict(orientation="h", y=-0.2), bargap=0.05)
+    c.plotly_chart(fig, width="stretch")
+
+    risk_seg = (high.groupby("segment", as_index=False)["monetary"].sum()
+                    .sort_values("monetary", ascending=False))
+    fig = px.bar(risk_seg, x="segment", y="monetary", title="Revenue at risk by segment (high-risk)",
+                 color="monetary", color_continuous_scale=["#FDE68A", "#F97316", "#DC2626"])
+    style(fig, 340)
+    fig.update_layout(xaxis_title=None, yaxis_title="Lifetime spend ($)",
+                      coloraxis_showscale=False)
+    d.plotly_chart(fig, width="stretch")
 
     st.markdown("**Highest-risk active customers**")
     n = st.slider("Rows to show", 10, 200, 25, step=5)
@@ -405,8 +587,8 @@ def page_inventory() -> None:
     sc.columns = ["status", "products"]
     fig = px.bar(sc, x="status", y="products", color="status", text="products",
                  color_discrete_map=STATUS_COLORS, title="Products by stock status")
-    fig.update_layout(height=360, margin=dict(l=10, r=10, t=50, b=10), showlegend=False,
-                      xaxis_title=None)
+    style(fig, 360)
+    fig.update_layout(showlegend=False, xaxis_title=None)
     a.plotly_chart(fig, width="stretch")
 
     ranked = plan.sort_values("days_of_cover").head(15)
@@ -414,12 +596,36 @@ def page_inventory() -> None:
     fig.add_bar(x=ranked["product_id"], y=ranked["current_stock"], name="Current stock",
                 marker_color=[STATUS_COLORS[s] for s in ranked["status"]])
     fig.add_scatter(x=ranked["product_id"], y=ranked["reorder_point"], name="Reorder point",
-                    mode="markers", marker=dict(symbol="line-ew-open", size=22, color="#111",
-                                                line=dict(width=3)))
-    fig.update_layout(height=360, margin=dict(l=10, r=10, t=50, b=10),
-                      title="15 lowest-cover products: stock vs. reorder point",
+                    mode="markers", marker=dict(symbol="line-ew-open", size=22,
+                                                color=colors["text"], line=dict(width=3)))
+    style(fig, 360)
+    fig.update_layout(title="15 lowest-cover products: stock vs. reorder point",
                       legend=dict(orientation="h", y=-0.2))
     b.plotly_chart(fig, width="stretch")
+
+    # ---- NEW: status mix by category + days-of-cover distribution
+    c, d = st.columns(2)
+    cat_status = plan.groupby(["category", "status"]).size().reset_index(name="products")
+    fig = px.bar(cat_status, x="category", y="products", color="status",
+                 color_discrete_map=STATUS_COLORS, barmode="stack",
+                 category_orders={"status": ["Critical", "Reorder", "Healthy", "Overstock"]},
+                 title="Stock status mix by category")
+    style(fig, 340)
+    fig.update_layout(xaxis_title=None, yaxis_title="Products",
+                      legend=dict(orientation="h", y=-0.25))
+    c.plotly_chart(fig, width="stretch")
+
+    cover = plan.replace([np.inf, -np.inf], np.nan).dropna(subset=["days_of_cover"]).copy()
+    if not cover.empty:
+        cover["days_of_cover"] = cover["days_of_cover"].clip(upper=cover["days_of_cover"].quantile(0.98))
+        fig = px.histogram(cover, x="days_of_cover", color="status", nbins=30,
+                           color_discrete_map=STATUS_COLORS, barmode="stack",
+                           category_orders={"status": ["Critical", "Reorder", "Healthy", "Overstock"]},
+                           title="Days of cover distribution")
+        style(fig, 340)
+        fig.update_layout(xaxis_title="Days of cover", yaxis_title="Products",
+                          legend=dict(orientation="h", y=-0.25), bargap=0.05)
+        d.plotly_chart(fig, width="stretch")
 
     status_filter = st.multiselect("Filter by status", list(STATUS_COLORS),
                                    default=["Critical", "Reorder"])
@@ -450,31 +656,55 @@ def page_monitoring() -> None:
         k4.metric("Drift alerts", d.get("transactions_alerts", 0) + d.get("feature_alerts", 0)
                   + d.get("forecast_error_breaches", 0))
 
+    # ---- NEW: overall drift status summary across both drift tables
+    drift_tx = read_csv("drift_transactions.csv").assign(source="Transactions")
+    drift_cf = read_csv("drift_customer_features.csv").assign(source="Customer features")
+    drift_all = pd.concat([drift_tx, drift_cf], ignore_index=True)
+    status_counts = drift_all.groupby(["source", "status"]).size().reset_index(name="features")
+    fig = px.bar(status_counts, x="source", y="features", color="status", barmode="stack",
+                 color_discrete_map=DRIFT_COLORS, text="features",
+                 category_orders={"status": ["OK", "WARN", "ALERT", "n/a"]},
+                 title="Drift status summary (features per status)")
+    style(fig, 300)
+    fig.update_layout(xaxis_title=None, yaxis_title="Features",
+                      legend=dict(orientation="h", y=-0.2))
+    st.plotly_chart(fig, width="stretch")
+
     tabs = st.tabs(["Transaction drift", "Customer-feature drift", "Forecast error", "Data quality"])
     for tab, name, title in ((tabs[0], "drift_transactions.csv", "Transactions: first 12 months vs. last 90 days"),
                              (tabs[1], "drift_customer_features.csv", "Customer features: 6 months ago vs. today")):
         with tab:
             df = read_csv(name)
-            colors = {"OK": "#2ca02c", "WARN": "#ff7f0e", "ALERT": "#d62728", "n/a": "#999"}
             fig = px.bar(df, x="psi", y="feature", orientation="h", color="status",
-                         color_discrete_map=colors, title=title)
-            fig.add_vline(x=0.10, line_dash="dash", line_color="#ff7f0e")
-            fig.add_vline(x=0.25, line_dash="dash", line_color="#d62728")
-            fig.update_layout(height=320, margin=dict(l=10, r=10, t=50, b=10), yaxis_title=None,
-                              xaxis_title="Population Stability Index")
+                         color_discrete_map=DRIFT_COLORS, title=title)
+            fig.add_vline(x=0.10, line_dash="dash", line_color=DRIFT_COLORS["WARN"])
+            fig.add_vline(x=0.25, line_dash="dash", line_color=DRIFT_COLORS["ALERT"])
+            style(fig, 320)
+            fig.update_layout(yaxis_title=None, xaxis_title="Population Stability Index")
             st.plotly_chart(fig, width="stretch")
             st.dataframe(df, width="stretch", hide_index=True)
             st.caption("PSI < 0.10 stable · 0.10-0.25 moderate shift (WARN) · > 0.25 significant shift (ALERT).")
     with tabs[2]:
         err = read_csv("drift_forecast_error.csv", ("date",))
         fig = go.Figure()
-        fig.add_scatter(x=err["date"], y=err["abs_error"], name="Abs. error", opacity=0.45)
+        fig.add_scatter(x=err["date"], y=err["abs_error"], name="Abs. error",
+                        line=dict(color=SECONDARY), opacity=0.5)
         fig.add_scatter(x=err["date"], y=err["rolling_error"], name="14-day rolling error",
-                        line=dict(width=3))
+                        line=dict(width=3, color=PRIMARY))
         fig.add_scatter(x=err["date"], y=err["upper_limit"], name="Control limit",
-                        line=dict(dash="dash", color="#d62728"))
-        fig.update_layout(height=360, margin=dict(l=10, r=10, t=30, b=10), yaxis_title="Units",
+                        line=dict(dash="dash", color=DRIFT_COLORS["ALERT"]))
+        style(fig, 360)
+        fig.update_layout(margin=dict(l=10, r=10, t=30, b=10), yaxis_title="Units",
                           legend=dict(orientation="h", y=1.1))
+        st.plotly_chart(fig, width="stretch")
+
+        # ---- NEW: error distribution
+        fig = px.histogram(err, x="abs_error", nbins=30, title="Distribution of absolute forecast error",
+                           color_discrete_sequence=[ACCENT])
+        fig.add_vline(x=float(err["abs_error"].mean()), line_dash="dash", line_color=colors["text"],
+                      annotation_text="mean", annotation_position="top")
+        style(fig, 300)
+        fig.update_layout(xaxis_title="Absolute error (units)", yaxis_title="Days", bargap=0.05)
         st.plotly_chart(fig, width="stretch")
         st.caption(f"Days where the rolling error exceeds the control limit: {int(err['breach'].sum())}. "
                    "Sustained breaches should trigger retraining.")
