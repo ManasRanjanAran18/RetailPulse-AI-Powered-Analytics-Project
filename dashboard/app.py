@@ -135,6 +135,67 @@ st.markdown(
         white-space: normal;
     }}
 
+    /* ---- buttons (incl. download buttons) ---- */
+    .stApp .stButton > button,
+    .stApp .stDownloadButton > button,
+    .stApp [data-testid="stDownloadButton"] button,
+    .stApp [data-testid="stBaseButton-secondary"] {{
+        background-color: {colors["card"]};
+        color: {colors["text"]};
+        border: 1px solid {colors["border"]};
+        border-radius: 8px;
+    }}
+
+    .stApp .stButton > button p,
+    .stApp .stDownloadButton > button p,
+    .stApp [data-testid="stDownloadButton"] button p,
+    .stApp [data-testid="stBaseButton-secondary"] p {{
+        color: {colors["text"]};
+    }}
+
+    .stApp .stButton > button:hover,
+    .stApp .stDownloadButton > button:hover,
+    .stApp [data-testid="stDownloadButton"] button:hover,
+    .stApp [data-testid="stBaseButton-secondary"]:hover {{
+        border-color: #4F46E5;
+        background-color: {colors["border"]};
+    }}
+
+    /* ---- inputs, selects, multiselects, date pickers ---- */
+    .stApp [data-baseweb="select"] > div,
+    .stApp [data-baseweb="input"] > div,
+    .stApp [data-baseweb="base-input"] {{
+        background-color: {colors["card"]};
+        color: {colors["text"]};
+        border-color: {colors["border"]};
+    }}
+
+    .stApp [data-baseweb="select"] input,
+    .stApp [data-baseweb="input"] input,
+    .stApp [data-baseweb="select"] span,
+    .stApp [data-baseweb="select"] svg {{
+        color: {colors["text"]};
+        fill: {colors["text"]};
+    }}
+
+    /* dropdown menus and calendar popups */
+    [data-baseweb="popover"] ul,
+    [data-baseweb="popover"] li,
+    [data-baseweb="popover"] [data-baseweb="calendar"],
+    [data-baseweb="popover"] [data-baseweb="menu"] {{
+        background-color: {colors["card"]};
+        color: {colors["text"]};
+    }}
+
+    /* expanders and tabs */
+    .stApp [data-testid="stExpander"] {{
+        border: 1px solid {colors["border"]};
+        border-radius: 10px;
+    }}
+    .stApp [data-baseweb="tab"] p {{
+        color: {colors["text"]};
+    }}
+
     [data-testid="stMetric"] {{
         background-color: {colors["card"]};
         border: 1px solid {colors["border"]};
